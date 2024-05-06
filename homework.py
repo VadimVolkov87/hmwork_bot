@@ -57,14 +57,14 @@ def send_message(bot, message):
         bot.send_message(
             chat_id=TELEGRAM_CHAT_ID,
             text=message,
-            )
+        )
         logger.debug('Бот отправил сообщение')
     except Exception as error:
         raise Exception(f'Сбой отправки сообщения в Телеграм {error}.')
 
 
 def get_api_answer(timestamp=1549962000):
-    """Функция запроса к API-сервису."""
+    """Функция запроса к API-сервису Практикума."""
     try:
         response = requests.get(url=ENDPOINT, headers=HEADERS,
                                 params={'from_date': timestamp})
@@ -126,7 +126,7 @@ def main():
         'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
         'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
         'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID
-        }
+    }
 
     bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time()) - RETRY_PERIOD
