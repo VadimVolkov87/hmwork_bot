@@ -205,8 +205,7 @@ def main():
                 timestamp = response.get('current_date')
         except ta.ApiException as error:
             logger.error(f'{error}', exc_info=True)
-        finally:
-            time.sleep(RETRY_PERIOD)
+        time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
