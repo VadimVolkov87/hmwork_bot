@@ -176,21 +176,15 @@ def main():
             response = get_api_answer(timestamp)
             homeworks = check_response(response=response)
             message = parse_status(homeworks[0])
-        except WrongResponseCodeException as error:
-            logger.error(f'{error}', exc_info=True)
-            message = f'{error}'
-        except EmptyResponseException as error:
-            logger.error(f'{error}', exc_info=True)
-            message = f'{error}'
         except Exception as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
         try:
             if message != previous_message:
                 send_message(bot=bot, message=message)
-            if luck_sending is True:
-                previous_message = message
-                timestamp = response.get('current_date')
+                if luck_sending is True:
+                    previous_message = message
+                    timestamp = response.get('current_date')
         except ta.ApiException as error:
             logger.error(f'{error}', exc_info=True)
         finally:
