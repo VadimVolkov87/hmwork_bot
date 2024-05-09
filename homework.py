@@ -176,22 +176,13 @@ def main():
             response = get_api_answer(timestamp)
             homeworks = check_response(response=response)
             message = parse_status(homeworks[0])
-        except ConnectionError as error:
-            logger.error(f'{error}', exc_info=True)
-            message = f'{error}'
         except WrongResponseCodeException as error:
-            logger.error(f'{error}', exc_info=True)
-            message = f'{error}'
-        except IndexError as error:
-            logger.debug(f'{error}', exc_info=True)
-            message = f'{error}'
-        except TypeError as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
         except EmptyResponseException as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
-        except KeyError as error:
+        except Exception as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
         try:
