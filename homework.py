@@ -194,9 +194,6 @@ def main():
         except KeyError as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
-        except Exception as error:
-            logger.error(f'{error}', exc_info=True)
-            message = f'{error}'
         try:
             if message != previous_message:
                 send_message(bot=bot, message=message)
@@ -205,7 +202,8 @@ def main():
                 timestamp = response.get('current_date')
         except ta.ApiException as error:
             logger.error(f'{error}', exc_info=True)
-        time.sleep(RETRY_PERIOD)
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
