@@ -175,9 +175,6 @@ def main():
         try:
             response = get_api_answer(timestamp)
             homeworks = check_response(response=response)
-            if homeworks is None:
-                logger.debug('Список "homeworks" пуст.')
-                raise IndexError
             message = parse_status(homeworks[0])
         except ConnectionError as error:
             logger.error(f'{error}', exc_info=True)
@@ -186,7 +183,7 @@ def main():
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
         except IndexError as error:
-            logger.error(f'{error}', exc_info=True)
+            logger.debug(f'{error}', exc_info=True)
             message = f'{error}'
         except TypeError as error:
             logger.error(f'{error}', exc_info=True)
