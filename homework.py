@@ -208,14 +208,6 @@ def main():
                 timestamp = response.get('current_date')
         except ta.ApiException as error:
             logger.error(f'{error}', exc_info=True)
-        except Exception as error:
-            logger.error(f'{error}', exc_info=True)
-            message = f'{error}'
-            if message != previous_message:
-                send_message(bot=bot, message=message)
-            if luck_sending is True:
-                previous_message = message
-                timestamp = response.get('current_date')
         finally:
             time.sleep(RETRY_PERIOD)
 
