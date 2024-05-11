@@ -173,8 +173,8 @@ def main():
                 message = 'Список домашних работ пуст.'
                 continue
             message = parse_status(homeworks[0])
-            if ((message != previous_message) and
-               send_message(bot=bot, message=message) is True):
+            if ((message != previous_message)
+               and send_message(bot=bot, message=message) is True):
                 previous_message = message
                 timestamp = response.get('current_date', timestamp)
         except ta.ApiException as error:
@@ -182,8 +182,8 @@ def main():
         except Exception as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
-            if ((message != previous_message) and
-               send_message(bot=bot, message=message) is True):
+            if ((message != previous_message)
+               and send_message(bot=bot, message=message) is True):
                 previous_message = message
                 timestamp = response.get('current_date', timestamp)
         finally:
