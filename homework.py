@@ -9,9 +9,10 @@ from logging.handlers import RotatingFileHandler
 import requests
 import telebot.apihelper as ta
 from dotenv import load_dotenv
+from telebot import TeleBot
+
 from exceptions import (EmptyResponseException, EnvironmentVariableException,
                         WrongResponseCodeException)
-from telebot import TeleBot
 
 load_dotenv()
 
@@ -40,7 +41,7 @@ formatter = logging.Formatter(
 )
 handler.setFormatter(formatter)
 record_handler = RotatingFileHandler(
-    __file__ + '.log', maxBytes=50000000, backupCount=1
+    __file__ + '.log', maxBytes=50000000, backupCount=1, encoding='utf-8'
 )
 logger.addHandler(record_handler)
 record_formatter = logging.Formatter(
@@ -51,37 +52,39 @@ record_handler.setFormatter(record_formatter)
 
 def check_tokens():
     """Функция проверки доступности переменных окружения."""
-    variables = {
-        'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
-        'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
-        'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID
-    }
-    for variable in variables:
-        flag = True
-        if variables[variable] is None:
-            flag = False
-        if flag is False:
-            raise EnvironmentVariableException(
-                (f'Отсутствует обязательная переменная окружения:"{variable}".'
-                 'Программа остановлена.')
-            )
+    variables = (
+        ('TELEGRAM_TOKEN', TELEGRAM_TOKEN),
+        ('PRACTICUM_TOKEN', PRACTICUM_TOKEN),
+        ('TELEGRAM_CHAT_ID', TELEGRAM_CHAT_ID)
+    )
+    empty_variables = []
+    for variable_name, variable in variables:
+        if not variable:
+            empty_variables.append(variable_name)
+    if empty_variables:
+        logger.critical(
+            ('Отсутствует обязательная переменная окружения:'
+             f'"{empty_variables}".Программа остановлена.'),
+            exc_info=True
+        )
+        raise EnvironmentVariableException(
+            ('Отсутствует обязательная переменная окружения:'
+             f'"{empty_variables}".Программа остановлена.')
+        )
 
 
 def send_message(bot, message):
     """Функция отсылки сообщения в Телеграмм."""
-    global luck_sending
-    luck_sending = True
     try:
         bot.send_message(
             chat_id=TELEGRAM_CHAT_ID,
             text=message,
         )
     except ta.ApiException as error:
-        luck_sending = False
         logger.error(f'{error}', exc_info=True)
-    else:
-        logger.debug(f'Бот отправил сообщение {message}')
-    return luck_sending
+        return False
+    logger.debug(f'Бот отправил сообщение {message}')
+    return True
 
 
 def get_api_answer(timestamp):
@@ -91,14 +94,14 @@ def get_api_answer(timestamp):
         'headers': HEADERS,
         'params': {'from_date': timestamp}
     }
+    logger.debug(
+        ('Сделан запрос к эндпоинту {url}. '
+         'Параметры запроса: '
+         '{params}'.format(**date_for_request))
+    )
     try:
-        logger.debug(
-            ('Сделан запрос к эндпоинту {url}. '
-             'Параметры запроса: '
-             '{params}'.format_map(date_for_request))
-        )
         response = requests.get(
-            url=date_for_request['url'],
+            url='{url}'.format(**date_for_request),
             headers=date_for_request['headers'],
             params=date_for_request['params']
         )
@@ -120,7 +123,7 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Функция проверки ответа API на наличие данных."""
     logger.debug('Начата проверка ответа API')
-    if isinstance(response, dict) is False:
+    if not isinstance(response, dict):
         raise TypeError(
             f'Ответ не соотвествует ожидаемому: {type(response)}'
         )
@@ -142,31 +145,21 @@ def parse_status(homework):
         raise KeyError('Неопределённый статус домашней работы.')
     if 'homework_name' not in homework:
         raise KeyError('Неопределённый статус домашней работы.')
-    global homework_previous_status
     status = homework.get('status')
     homework_name = homework.get('homework_name')
     if status not in HOMEWORK_VERDICTS:
-        raise KeyError(
+        raise ValueError(
             (f'Статус работы "{homework_name}"'
              f'не соответствует стандартному: {status}.')
         )
-    for status_name in HOMEWORK_VERDICTS:
-        if status_name == status:
-            verdict = HOMEWORK_VERDICTS[status_name]
-            homework_previous_status = status
-            return (f'Изменился статус проверки работы "{homework_name}".'
-                    f'{verdict}')
-    return 'Ничего нет'
+    verdict = HOMEWORK_VERDICTS[status]
+    return (f'Изменился статус проверки работы "{homework_name}".'
+            f'{verdict}')
 
 
 def main():
     """Основная логика работы бота."""
-    try:
-        check_tokens()
-    except EnvironmentVariableException as error:
-        logger.critical(f'{error}', exc_info=True)
-        message = f'{error}'
-        sys.exit()
+    check_tokens()
     bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     previous_message = ''
@@ -175,18 +168,24 @@ def main():
         try:
             response = get_api_answer(timestamp)
             homeworks = check_response(response=response)
+            if not homeworks:
+                logger.error('Список домашних работ пуст.', exc_info=True)
+                message = 'Список домашних работ пуст.'
+                continue
             message = parse_status(homeworks[0])
+            if ((message != previous_message) and
+               send_message(bot=bot, message=message) is True):
+                previous_message = message
+                timestamp = response.get('current_date', timestamp)
+        except ta.ApiException as error:
+            logger.error(f'{error}', exc_info=True)
         except Exception as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
-        try:
-            if message != previous_message:
-                send_message(bot=bot, message=message)
-                if luck_sending is True:
-                    previous_message = message
-                    timestamp = response.get('current_date')
-        except ta.ApiException as error:
-            logger.error(f'{error}', exc_info=True)
+            if ((message != previous_message) and
+               send_message(bot=bot, message=message) is True):
+                previous_message = message
+                timestamp = response.get('current_date', timestamp)
         finally:
             time.sleep(RETRY_PERIOD)
 
