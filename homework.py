@@ -1,4 +1,5 @@
 """Модуль робота для проверки статуса домашних работ в Практикум."""
+import ast
 import logging
 import os
 import sys
@@ -102,8 +103,8 @@ def get_api_answer(timestamp):
     try:
         response = requests.get(
             url='{url}'.format(**date_for_request),
-            headers=date_for_request['headers'],
-            params=date_for_request['params']
+            headers=ast.literal_eval('{headers}'.format(**date_for_request)),
+            params=ast.literal_eval('{params}'.format(**date_for_request))
         )
         response.raise_for_status()
     except requests.RequestException:
@@ -169,23 +170,20 @@ def main():
             response = get_api_answer(timestamp)
             homeworks = check_response(response=response)
             if not homeworks:
-                logger.error('Список домашних работ пуст.', exc_info=True)
                 message = 'Список домашних работ пуст.'
+                logger.error(message, exc_info=True)
                 continue
             message = parse_status(homeworks[0])
             if ((message != previous_message)
                and send_message(bot=bot, message=message) is True):
                 previous_message = message
                 timestamp = response.get('current_date', timestamp)
-        except ta.ApiException as error:
-            logger.error(f'{error}', exc_info=True)
         except Exception as error:
             logger.error(f'{error}', exc_info=True)
             message = f'{error}'
             if ((message != previous_message)
                and send_message(bot=bot, message=message) is True):
                 previous_message = message
-                timestamp = response.get('current_date', timestamp)
         finally:
             time.sleep(RETRY_PERIOD)
 
