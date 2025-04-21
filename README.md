@@ -13,7 +13,7 @@
 Клонировать репозиторий:
 
 ```bash
-git clone https://github.com/VadimVolkov87/homework_bot.git
+git clone https://github.com/VadimVolkov87/hmwork_bot.git
 ```
 
 Перейти в корневую папку приложения:
