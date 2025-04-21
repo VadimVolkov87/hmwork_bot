@@ -1,5 +1,4 @@
 """Модуль робота для проверки статуса домашних работ в Практикум."""
-import ast
 import logging
 import os
 import sys
@@ -93,7 +92,7 @@ def get_api_answer(timestamp):
     date_for_request = {
         'url': ENDPOINT,
         'headers': HEADERS,
-        'params': {'from_date': timestamp}
+        'params': {'from_date': timestamp - 1209600}
     }
     logger.debug(
         ('Сделан запрос к эндпоинту {url}. '
@@ -101,11 +100,7 @@ def get_api_answer(timestamp):
          '{params}'.format(**date_for_request))
     )
     try:
-        response = requests.get(
-            url='{url}'.format(**date_for_request),
-            headers=ast.literal_eval('{headers}'.format(**date_for_request)),
-            params=ast.literal_eval('{params}'.format(**date_for_request))
-        )
+        response = requests.get(**date_for_request)
         response.raise_for_status()
     except requests.RequestException:
         raise ConnectionError(
